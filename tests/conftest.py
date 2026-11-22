@@ -9,7 +9,9 @@ import sys
 from botocore.exceptions import ClientError
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path[:0] = [os.path.join(ROOT, "client"), os.path.join(ROOT, "client", "lambdazap", "image")]
+SIBLINGS = os.path.dirname(ROOT)   # repo-private: idlefree-auth / idlefree-ui live next to lambdazap
+sys.path[:0] = [os.path.join(ROOT, "client"), os.path.join(ROOT, "client", "lambdazap", "image"),
+                os.path.join(SIBLINGS, "idlefree-auth"), os.path.join(SIBLINGS, "idlefree-ui")]
 os.environ.update(AWS_DEFAULT_REGION="us-east-2", HTTP_AUTH="1", USER_NAME="admin", PASSWORD="a-password-of-16+chars",
                   ALLOWED_TARGETS=json.dumps(["example.com", "app.example.org:8443", "*.example.net"]),
                   BUCKET="test-reports", PROJECT="test-scanner", LOG_GROUP="/aws/codebuild/test-scanner",

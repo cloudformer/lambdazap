@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Sign-in and the console CSS now come from the shared packages `idlefree-auth` and `idlefree-ui` instead of a
+  copy carried here; behavior and the page are unchanged.
+
 ## 0.1.0
 
 - First release: a web UI on a Lambda Function URL starts and shuts down scanners (CodeBuild instances with the
