@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.4 — 2026-11-22
+## 0.1.5 — 2026-11-22
 
 - Console: a browser-style tab strip of the running scanners above the console; the shown one is highlighted, and clicking a task marks the scanner it runs on. Idle shutdown default lowered to 10 minutes.
 
