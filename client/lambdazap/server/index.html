@@ -68,6 +68,16 @@
   white-space: pre-wrap; overflow-wrap: anywhere; height: 52vh; min-height: 240px; overflow: auto; }
 .console-body .mark { color: var(--code-sql); }
 .console-body .ok { color: var(--code-ok); } .console-body .err { color: var(--code-err); }
+/* scanner tabs: one per running scanner, like browser tabs; the one shown is active, the one running the picked task is marked */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 2px; }
+.tabs:empty { display: none; }
+.tab { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border: 1px solid var(--line); border-bottom: none;
+  border-radius: 8px 8px 0 0; background: var(--panel2); cursor: pointer; font: 12px var(--mono); color: var(--muted); }
+.tab:hover { color: var(--text); }
+.tab.active { background: var(--panel); color: var(--text); border-color: var(--line2); border-bottom: 1px solid var(--panel); }
+.tab .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.tab.active .dot, .tab.has-task .dot { background: var(--accent); }
+.tab.has-task { box-shadow: inset 0 -2px 0 var(--accent); }
 </style>
 </head>
 <body>
@@ -111,6 +121,7 @@
   </section>
 
   <section class="panel console">
+    <div class="tabs" id="tabs"></div>
     <div class="console-head" id="console-head"><span class="hint">Pick a scanner or a task to see its console.</span></div>
     <div class="console-body" id="console" role="log" aria-live="off"></div>
   </section>
@@ -245,8 +256,24 @@ function row(kind, item, cells, acts){
   return r;
 }
 
+// scanner tabs above the console: one per running scanner (browser-style), the shown one active,
+// the one running the picked task marked — so clicking a task shows which session it is on.
+function renderTabs(){
+  const running = scanners.filter(s => s.status === RUNNING);
+  const cur = picked;
+  const activeScanner = cur && cur.kind === 'scanner' ? cur.id : null;
+  let taskScanner = null;
+  if (cur && cur.kind === 'task'){ const t = tasks.find(x => x.id === cur.id); taskScanner = t && t.claim && t.claim.scanner; }
+  $('#tabs').replaceChildren(...running.map(s =>
+    h('button', {className: 'tab' + (s.id === activeScanner ? ' active' : '') + (s.id === taskScanner ? ' has-task' : ''),
+        title: 'Show this scanner\'s console',
+        onclick: () => { picked = {kind: 'scanner', id: s.id}; feed = null; render(); pollConsole(); }},
+      h('span', {className: 'dot'}), 'Scanner ' + short(s.id))));
+}
+
 function render(){
   const on = scanners.filter(s => s.status === RUNNING);
+  renderTabs();
   $('#scanners-fold').setAttribute('aria-expanded', String(!folds.scanners));
   $('#scanners-sum').textContent = `${on.length ? on.length + ' on' : 'all off'} · at most ${cfg.max_scanners} · each shuts down after ${cfg.idle_shutdown_minutes} min without a task`;
   $('#power-on').disabled = on.length >= cfg.max_scanners;

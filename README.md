@@ -6,7 +6,7 @@ start and shut down like machines, ≈ $0 while none is on.** Part of [IdleFree]
 Pick a size and a duration, start a scanner (ready in about a minute), start more if you want. Add tasks: one or
 more URLs and a mode each; any free scanner takes the next one. The console follows a task's log live and links its
 reports (HTML, JSON, Markdown) when it finishes. Shut a scanner down when done; it also shuts down by itself when
-its time is up or after 15 minutes without a task. Only hosts on the allowlist can be scanned — set `allowed_targets`
+its time is up or after 10 minutes without a task. Only hosts on the allowlist can be scanned — set `allowed_targets`
 to `["*"]` to turn the allowlist off and scan any host (sign-in is then the only gate).
 
 ![the console](docs/console.svg)
