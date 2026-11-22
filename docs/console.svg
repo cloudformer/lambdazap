@@ -2,42 +2,42 @@
      font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
   <defs>
     <style>
-      .win   { fill: #FFFFFF; stroke: #E5E7EB; stroke-width: 1.4; }
-      .bar   { fill: #FFFFFF; }
-      .panel { fill: #FFFFFF; stroke: #E5E7EB; stroke-width: 1.2; }
-      .rowln { fill: #FFFFFF; stroke: #E5E7EB; stroke-width: 1; }
-      .brand { font-size: 17px; font-weight: 700; fill: #111827; }
-      .k     { font-size: 11px; fill: #6B7280; }
-      .chip  { fill: #F3F4F6; stroke: #E5E7EB; stroke-width: 1; }
-      .chipt { font: 12px ui-monospace, Menlo, monospace; fill: #374151; }
-      .fold  { font-size: 14px; font-weight: 600; fill: #111827; }
-      .hint  { font-size: 12px; fill: #6B7280; }
-      .mono  { font: 12px ui-monospace, Menlo, monospace; fill: #6B7280; }
-      .what  { font-size: 13px; fill: #1F2937; }
+      .win   { fill: #0F1620; stroke: #26323B; stroke-width: 1.4; }
+      .bar   { fill: #0F1620; }
+      .panel { fill: #141C24; stroke: #26323B; stroke-width: 1.2; }
+      .rowln { fill: #141C24; stroke: #26323B; stroke-width: 1; }
+      .brand { font-size: 17px; font-weight: 700; fill: #E6ECF0; }
+      .k     { font-size: 11px; fill: #8A97A3; }
+      .chip  { fill: #1E2A32; stroke: #2B3843; stroke-width: 1; }
+      .chipt { font: 12px ui-monospace, Menlo, monospace; fill: #CBD5E1; }
+      .fold  { font-size: 14px; font-weight: 600; fill: #E6ECF0; }
+      .hint  { font-size: 12px; fill: #8A97A3; }
+      .mono  { font: 12px ui-monospace, Menlo, monospace; fill: #8A97A3; }
+      .what  { font-size: 13px; fill: #E6ECF0; }
       .btn   { fill: #0A6E5C; }
       .btnt  { font-size: 12.5px; font-weight: 600; fill: #FFFFFF; }
-      .btno  { fill: #FFFFFF; stroke: #D1D5DB; stroke-width: 1; }
-      .btnot { font-size: 12px; fill: #374151; }
-      .sel   { fill: #FFFFFF; stroke: #D1D5DB; stroke-width: 1; }
-      .selt  { font-size: 12px; fill: #374151; }
+      .btno  { fill: #1B252C; stroke: #3A4752; stroke-width: 1; }
+      .btnot { font-size: 12px; fill: #CBD5E1; }
+      .sel   { fill: #1B252C; stroke: #3A4752; stroke-width: 1; }
+      .selt  { font-size: 12px; fill: #CBD5E1; }
       .badge { stroke-width: 1; }
-      .brun  { fill: #E0F0EC; stroke: #0A6E5C; } .brunt { font-size: 11.5px; font-weight: 600; fill: #0A6E5C; }
-      .bpass { fill: #FFFFFF; stroke: #15803D; } .bpasst { font-size: 11.5px; font-weight: 600; fill: #15803D; }
-      .bwait { fill: #FFFFFF; stroke: #D1D5DB; } .bwaitt { font-size: 11.5px; font-weight: 600; fill: #6B7280; }
-      .code  { fill: #0F172A; }
+      .brun  { fill: #11302B; stroke: #4FD1B0; } .brunt { font-size: 11.5px; font-weight: 600; fill: #4FD1B0; }
+      .bpass { fill: #141C24; stroke: #4ADE80; } .bpasst { font-size: 11.5px; font-weight: 600; fill: #4ADE80; }
+      .bwait { fill: #141C24; stroke: #3A4752; } .bwaitt { font-size: 11.5px; font-weight: 600; fill: #8A97A3; }
+      .code  { fill: #0A0E13; }
       .cl    { font: 12px ui-monospace, Menlo, monospace; fill: #E2E8F0; }
       .cmark { font: 12px ui-monospace, Menlo, monospace; fill: #93C5FD; }
       .cok   { font: 12px ui-monospace, Menlo, monospace; fill: #6EE7B7; }
-      .status{ fill: #F9FAFB; stroke: #E5E7EB; stroke-width: 1; }
+      .status{ fill: #0F1620; stroke: #26323B; stroke-width: 1; }
     </style>
   </defs>
 
-  <rect width="1100" height="700" rx="14" fill="#F3F4F6"/>
+  <rect width="1100" height="700" rx="14" fill="#0A0F14"/>
   <rect x="16" y="14" width="1068" height="672" rx="12" class="win"/>
 
   <!-- top bar -->
   <rect x="17" y="15" width="1066" height="46" rx="12" class="bar"/>
-  <line x1="17" y1="61" x2="1083" y2="61" stroke="#E5E7EB" stroke-width="1.2"/>
+  <line x1="17" y1="61" x2="1083" y2="61" stroke="#26323B" stroke-width="1.2"/>
   <text x="40" y="44" class="brand">🛡 lambdazap</text>
   <text x="190" y="36" class="k">Endpoint</text>
   <rect x="190" y="41" width="210" height="14" rx="7" class="chip"/>
@@ -77,8 +77,8 @@
   <text x="128" y="210" class="hint">1 running · 0 waiting · 1 done</text>
   <!-- new task -->
   <rect x="52" y="224" width="700" height="80" rx="8" class="sel"/>
-  <text x="66" y="246" class="mono" fill="#9CA3AF">Targets, one URL per line</text>
-  <text x="66" y="266" class="mono" fill="#9CA3AF">https://example.com/</text>
+  <text x="66" y="246" class="mono" fill="#6B7684">Targets, one URL per line</text>
+  <text x="66" y="266" class="mono" fill="#6B7684">https://example.com/</text>
   <rect x="768" y="224" width="110" height="24" rx="8" class="badge brun"/><text x="823" y="240" text-anchor="middle" class="brunt">● baseline</text>
   <rect x="768" y="252" width="110" height="24" rx="8" class="sel"/><text x="823" y="268" text-anchor="middle" class="selt">full</text>
   <rect x="884" y="224" width="110" height="24" rx="8" class="sel"/><text x="939" y="240" text-anchor="middle" class="selt">api</text>
@@ -86,13 +86,12 @@
   <text x="66" y="296" class="hint">allowed:</text>
   <rect x="120" y="286" width="26" height="15" rx="7" class="chip"/><text x="133" y="297" text-anchor="middle" class="chipt">*</text>
   <!-- task rows -->
-  <rect x="52" y="312" width="996" height="18" fill="none"/>
   <text x="68" y="326" class="mono">#2</text>
   <text x="104" y="326" class="what">baseline · https://example.com/</text>
   <text x="360" y="326" class="hint">admin · on a1b2</text>
   <rect x="872" y="314" width="68" height="20" rx="10" class="badge brun"/><text x="906" y="328" text-anchor="middle" class="brunt">running</text>
   <text x="956" y="326" class="mono">1 min</text>
-  <line x1="52" y1="338" x2="1048" y2="338" stroke="#EEF1F4" stroke-width="1"/>
+  <line x1="52" y1="338" x2="1048" y2="338" stroke="#1E2A32" stroke-width="1"/>
   <text x="68" y="352" class="mono">#1</text>
   <text x="104" y="352" class="what">full · https://staging.example.com/</text>
   <text x="372" y="352" class="hint">admin · on a1b2</text>
@@ -103,11 +102,11 @@
   <rect x="40" y="374" width="1020" height="272" rx="10" class="panel"/>
   <text x="58" y="400" class="what" font-weight="600">Task #2 · baseline</text>
   <rect x="196" y="388" width="68" height="18" rx="9" class="badge brun"/><text x="230" y="401" text-anchor="middle" class="brunt">running</text>
-  <text x="280" y="400" class="hint" fill="#0A6E5C">on scanner a1b2</text>
+  <text x="280" y="400" class="hint" fill="#4FD1B0">on scanner a1b2</text>
   <text x="400" y="400" class="hint">reports:</text>
-  <text x="452" y="400" class="hint" fill="#0A6E5C">html</text>
-  <text x="486" y="400" class="hint" fill="#0A6E5C">json</text>
-  <text x="520" y="400" class="hint" fill="#0A6E5C">md</text>
+  <text x="452" y="400" class="hint" fill="#4FD1B0">html</text>
+  <text x="486" y="400" class="hint" fill="#4FD1B0">json</text>
+  <text x="520" y="400" class="hint" fill="#4FD1B0">md</text>
   <rect x="52" y="410" width="996" height="224" rx="8" class="code"/>
   <text x="66" y="432" class="cmark">══ task #2 started</text>
   <text x="66" y="452" class="cl">zap-baseline.py -t https://example.com/ ...</text>
@@ -122,6 +121,6 @@
 
   <!-- status bar -->
   <rect x="17" y="654" width="1066" height="32" rx="12" class="status"/>
-  <text x="40" y="674" class="mono" fill="#0A6E5C">[10:42:07] scanner a1b2 starting: Small (2 vCPU), for 4 h</text>
-  <text x="1060" y="674" text-anchor="end" class="mono">lambdazap 0.1.2</text>
+  <text x="40" y="674" class="mono" fill="#4FD1B0">[10:42:07] scanner a1b2 starting: Small (2 vCPU), for 4 h</text>
+  <text x="1060" y="674" text-anchor="end" class="mono">lambdazap 0.1.3</text>
 </svg>
