@@ -9,6 +9,8 @@ reports (HTML, JSON, Markdown) when it finishes. Shut a scanner down when done; 
 its time is up or after 15 minutes without a task. Only hosts on the allowlist can be scanned — set `allowed_targets`
 to `["*"]` to turn the allowlist off and scan any host (sign-in is then the only gate).
 
+![the console](docs/console.svg)
+
 ![architecture](docs/architecture.svg)
 
 | | |
