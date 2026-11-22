@@ -19,6 +19,7 @@ to `["*"]` to turn the allowlist off and scan any host (sign-in is then the only
 | Scanners | one CodeBuild build each, on a fresh instance; take the queued tasks (S3) in order, one at a time |
 | Image | the official ZAP image, unchanged, plus the scan runner; in your ECR |
 | Reports | S3, presigned download links, expire after `report_retention_days` |
+| Sign-in (per task) | a task may carry a Cookie, a JWT, Cloudflare Access tokens or a raw header, so the scan runs behind a login; masked in the log, never returned by the API |
 | Secrets | SSM SecureStrings, set outside Terraform; masked as `***` in the log |
 | Idle cost | ≈ $0 while no scanner is on (CodeBuild bills per minute while one is) |
 

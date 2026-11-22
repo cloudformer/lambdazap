@@ -41,7 +41,16 @@
 .new { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 10px 14px; margin-top: 12px; }
 @media (max-width: 720px) { .new { grid-template-columns: 1fr; } .row { grid-template-columns: 44px minmax(0, 1fr) auto; } .row .left { display: none; }
   .row .act { grid-column: 1 / -1; } }
-.new textarea { height: 100%; min-height: 96px; resize: vertical; }
+.new-main { display: grid; gap: 8px; align-content: start; }
+.new textarea { min-height: 72px; resize: vertical; }
+.auth { display: grid; gap: 6px; }
+.auth-head { display: flex; align-items: center; justify-content: space-between; }
+.auth-head a { color: var(--accent); font-size: 12px; text-decoration: none; }
+.auth-head a:hover { text-decoration: underline; }
+.auth select { padding: 6px 9px; }
+.auth-f { display: none; }
+.auth-f.on { display: block; }
+.auth-cf.on { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .new-side { display: flex; flex-direction: column; gap: 6px; }
 .modes { display: flex; flex-direction: column; gap: 6px; }
 .mode { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid var(--line2); border-radius: 8px;
@@ -109,12 +118,34 @@
     </div>
     <div id="tasks-body">
       <div class="new">
-        <textarea id="targets" class="code" aria-label="Targets, one URL per line" placeholder="Targets, one URL per line&#10;https://example.com/"></textarea>
+        <div class="new-main">
+          <textarea id="targets" class="code" aria-label="Targets, one URL per line" placeholder="Targets, one URL per line&#10;https://app.example.com/"></textarea>
+          <div class="auth">
+            <div class="auth-head">
+              <span class="hint">Sign-in (optional) — scan behind a login</span>
+              <a href="https://developer.chrome.com/docs/devtools/application/cookies/" target="_blank" rel="noopener noreferrer">how to get it ↗</a>
+            </div>
+            <select id="auth-kind" aria-label="Sign-in type">
+              <option value="none">None — unauthenticated scan</option>
+              <option value="cookie">Cookie</option>
+              <option value="jwt">JWT (Bearer)</option>
+              <option value="cf">Cloudflare Access</option>
+              <option value="raw">Raw header</option>
+            </select>
+            <input id="auth-cookie" class="auth-f code" aria-label="Cookie" placeholder="sid=b7c1a9e2; token=eyJ1aWQiOjQyfQ; csrftoken=9f8a7b6c">
+            <input id="auth-jwt" class="auth-f code" aria-label="JWT" placeholder="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiJ9.Kx3b9Qp7mN2s">
+            <div id="auth-cf" class="auth-f auth-cf">
+              <input id="auth-cf-id" class="code" aria-label="CF Access Client Id" placeholder="8a1f0c7d2e5b4936.access">
+              <input id="auth-cf-secret" class="code" aria-label="CF Access Client Secret" placeholder="3d9e1a7c0b2f8564d1e3a6c9">
+            </div>
+            <input id="auth-raw" class="auth-f code" aria-label="Raw header" placeholder="X-Api-Key: 9c1f0a7b3d2e4856">
+            <div class="allowed" id="allowed"></div>
+          </div>
+        </div>
         <div class="new-side">
           <div class="modes" id="modes" role="radiogroup" aria-label="Mode"></div>
           <button class="btn btn-primary" id="add">+ Add task</button>
         </div>
-        <div class="allowed" id="allowed"></div>
       </div>
     </div>
     <div class="rows" id="tasks"></div>
@@ -305,7 +336,7 @@ function render(){
     const cancel = cls === 'waiting' ? h('button', {className: 'btn-danger', textContent: 'Cancel',
       onclick: e => { e.stopPropagation(); cancelTask(t); }}) : null;
     return row('task', t, [h('span', {className: 'id', textContent: '#' + taskNo(t)}),
-      h('span', {className: 'what'}, `${t.mode} · ${t.targets.join(' ')}`, h('span', {className: 'hint', textContent: `${t.by}${where}`})),
+      h('span', {className: 'what'}, `${t.mode} · ${t.targets.join(' ')}`, h('span', {className: 'hint', textContent: `${t.by}${where}${t.auth ? ' · 🔒 ' + t.auth : ''}`})),
       h('span', {className: 'left', textContent: t.claim && t.claim.started ? took(t.claim.started, t.claim.ended) : ''}),   // running: so far
       h('span', {className: 'badge ' + cls, textContent: label})], cancel ? [cancel] : []);
   }));
@@ -423,12 +454,23 @@ async function cancelTask(t){
   catch(e) { note(e.message, false); }
 }
 
+// sign-in field: the dropdown shows the matching input(s); the server validates the format
+const AUTH_FIELDS = {cookie: 'auth-cookie', jwt: 'auth-jwt', cf: 'auth-cf', raw: 'auth-raw'};
+function showAuth(){ const k = $('#auth-kind').value; for (const id of Object.values(AUTH_FIELDS)) $('#' + id).classList.toggle('on', id === AUTH_FIELDS[k]); }
+$('#auth-kind').onchange = showAuth;
+function authValue(){
+  const k = $('#auth-kind').value;
+  if (k === 'none') return null;
+  if (k === 'cf') return {kind: 'cf', id: $('#auth-cf-id').value.trim(), secret: $('#auth-cf-secret').value.trim()};
+  return {kind: k, value: $('#' + AUTH_FIELDS[k]).value.trim()};
+}
+
 $('#add').onclick = async () => {
   const targets = $('#targets').value.split('\n').map(s => s.trim()).filter(Boolean);
   if (!targets.length) return note('enter at least one target URL', false);
   $('#add').disabled = true;
   try {
-    const t = await api('/api/tasks', {method: 'POST', body: JSON.stringify({targets, mode: $('#modes input:checked').value})});
+    const t = await api('/api/tasks', {method: 'POST', body: JSON.stringify({targets, mode: $('#modes input:checked').value, auth: authValue()})});
     tasks.unshift(t); render();
     note(`task #${taskNo(t)} added: ${t.mode}, ${t.targets.length} target(s)` + (scanners.some(s => s.status === RUNNING) ? '' : ' · start a scanner to run it'), true);
     $('#targets').value = '';
@@ -449,6 +491,7 @@ async function start(){
       h('b', {textContent: m}), h('span', {className: 'hint', textContent: what}))));
   $('#allowed').replaceChildren(h('span', {className: 'hint', style: 'border:none;background:none;padding:0', textContent: 'allowed:'}),
                                 ...cfg.allowed_targets.map(t => h('span', {textContent: t})));
+  showAuth();
   const me = await api('/api/me');
   $('#who').textContent = me.identity; $('#who-meta').hidden = false;
   poll();

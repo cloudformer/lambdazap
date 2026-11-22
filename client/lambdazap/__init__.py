@@ -5,4 +5,4 @@ lambdazap.server is the Lambda (the web UI and its API); lambdazap/image is the 
 ZAP + the scanner loop). The Terraform module cloudformer/infra/aws//modules/lambdazap deploys both from this package.
 """
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"

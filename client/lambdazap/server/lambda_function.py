@@ -216,6 +216,60 @@ def _target(url):
     raise Forbidden(f"{host} is not on the allowlist (allowed_targets: {', '.join(ALLOWED_TARGETS)})")
 
 
+# ---- per-task sign-in: a scan can carry request headers so it runs behind a login (cookie, JWT, Cloudflare, raw) ----
+AUTH_KINDS = ("none", "cookie", "jwt", "cf", "raw")
+JWT_RE = re.compile(r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
+HEADER_NAME_RE = re.compile(r"^[A-Za-z0-9-]+$")
+MAX_HEADER = 8192
+
+
+def _auth_headers(auth):
+    """The task's sign-in choice turned into request headers [{name, value}], or [] for none. BadRequest on a bad format.
+    The scanner adds these to every request so the scan runs signed in; they are stored but never returned or logged."""
+    if not auth:
+        return []
+    if not isinstance(auth, dict):
+        raise BadRequest("auth: an object {kind, ...}")
+    kind = auth.get("kind", "none")
+    if kind == "none":
+        return []
+    if kind not in AUTH_KINDS:
+        raise BadRequest(f"auth.kind: one of {', '.join(AUTH_KINDS)}")
+
+    def val(v, what):
+        if not isinstance(v, str) or not v.strip():
+            raise BadRequest(f"auth: {what} is required")
+        if len(v) > MAX_HEADER:
+            raise BadRequest(f"auth: {what} is too long")
+        return v.strip()
+
+    if kind == "cookie":
+        v = val(auth.get("value"), "cookie")
+        if "=" not in v:
+            raise BadRequest("auth: a cookie is name=value; … (it needs '=')")
+        return [{"name": "Cookie", "value": v}]
+    if kind == "jwt":
+        v = val(auth.get("value"), "token")
+        if not JWT_RE.match(v):
+            raise BadRequest("auth: a JWT is three dot-separated parts (xxx.yyy.zzz)")
+        return [{"name": "Authorization", "value": "Bearer " + v}]
+    if kind == "cf":
+        cid, secret = val(auth.get("id"), "Client Id"), val(auth.get("secret"), "Client Secret")
+        if not cid.endswith(".access"):
+            raise BadRequest("auth: the Cloudflare Access Client Id ends with '.access'")
+        return [{"name": "CF-Access-Client-Id", "value": cid}, {"name": "CF-Access-Client-Secret", "value": secret}]
+    v = val(auth.get("value"), "header")   # raw
+    name, sep, value = v.partition(":")
+    if not sep or not HEADER_NAME_RE.match(name.strip()) or not value.strip():
+        raise BadRequest("auth: a raw header is 'Name: value'")
+    return [{"name": name.strip(), "value": value.strip()}]
+
+
+def _public(task):
+    """A task without its secret headers — safe to log or return."""
+    return {k: v for k, v in task.items() if k != "headers"}
+
+
 def _scanner_id(scanner_id):
     if not SCANNER_ID.fullmatch(scanner_id):
         raise BadRequest(f"scanner id: a uuid, got {scanner_id!r}")
@@ -394,7 +448,7 @@ def list_tasks(event):
     tasks, claims = _objects(TASKS), _objects(CLAIMS)
     out = []
     for key in sorted(tasks, reverse=True)[:TASK_LIMIT]:
-        task = dict(_read(key, tasks[key]))
+        task = _public(_read(key, tasks[key]))
         claim_key = CLAIMS + key[len(TASKS):]
         task["claim"] = _read(claim_key, claims[claim_key]) if claim_key in claims else None
         out.append(task)
@@ -410,11 +464,15 @@ def add_task(event):
     if not isinstance(targets, list) or not 1 <= len(targets) <= MAX_TARGETS:
         raise BadRequest(f"targets: a list of 1 to {MAX_TARGETS} URLs")
     urls = [_target(t) for t in targets]   # all checked before anything is queued
+    headers = _auth_headers(body.get("auth"))   # [] or request headers that sign the scan in
     task = {"id": f"{time.time_ns():019d}-{os.urandom(2).hex()}",   # sorts in the order added
             "targets": urls, "mode": mode, "by": event["identity"], "added": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    if headers:
+        task["headers"] = headers                        # secret: stored, never logged or returned
+        task["auth"] = (body.get("auth") or {}).get("kind")   # just the kind, for the UI to show a lock
     s3.put_object(Bucket=BUCKET, Key=_task_key(task["id"]), Body=json.dumps(task).encode(), ContentType="application/json")
-    print(json.dumps({"event": "task_added", **task}))
-    return 201, dict(task, claim=None)
+    print(json.dumps({"event": "task_added", **_public(task)}))
+    return 201, dict(_public(task), claim=None)
 
 
 def get_task(event, task_id):
@@ -425,6 +483,7 @@ def get_task(event, task_id):
         task = json.loads(s3.get_object(Bucket=BUCKET, Key=key)["Body"].read())
     except s3.exceptions.NoSuchKey:
         raise NotFound(f"no task {task_id}") from None
+    task = _public(task)
     task["claim"] = claim = _claim(task_id)
     reports = {}
     prefix = f"{REPORTS}{task_id}/"

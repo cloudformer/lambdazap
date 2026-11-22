@@ -204,3 +204,43 @@ def test_ids_are_checked():
     assert call("GET", "/api/tasks/..%2Fother")[0] in (400, 404)
     assert call("GET", f"/api/scanners/{SCANNER_ID}/log")[0] == 404
     assert call("GET", "/api/tasks/0000000000000000000-abcd")[0] == 404
+
+
+# ---- per-task sign-in (auth headers) ----
+def _add_auth(auth, aws):
+    return call("POST", "/api/tasks", {"targets": ["https://example.com/"], "mode": "baseline", "auth": auth})
+
+
+def test_auth_cookie_stored_not_returned(aws):
+    status, r = _add_auth({"kind": "cookie", "value": "sid=abc; token=xyz"}, aws)
+    assert status == 201 and "headers" not in r and r["auth"] == "cookie"          # kind shown, secret not echoed
+    assert queued(aws)[0]["headers"] == [{"name": "Cookie", "value": "sid=abc; token=xyz"}]   # stored for the scanner
+    assert "headers" not in call("GET", f"/api/tasks/{r['id']}")[1]                # not leaked by get
+    assert "headers" not in call("GET", "/api/tasks")[1]["tasks"][0]              # nor by list
+
+
+def test_auth_jwt_wraps_bearer(aws):
+    assert _add_auth({"kind": "jwt", "value": "aaa.bbb.ccc"}, aws)[0] == 201
+    assert queued(aws)[0]["headers"] == [{"name": "Authorization", "value": "Bearer aaa.bbb.ccc"}]
+
+
+def test_auth_cf_two_headers(aws):
+    assert _add_auth({"kind": "cf", "id": "abc.access", "secret": "s3cr3t"}, aws)[0] == 201
+    hs = queued(aws)[0]["headers"]
+    assert {"name": "CF-Access-Client-Id", "value": "abc.access"} in hs
+    assert {"name": "CF-Access-Client-Secret", "value": "s3cr3t"} in hs
+
+
+def test_auth_none_adds_no_headers(aws):
+    assert _add_auth({"kind": "none"}, aws)[0] == 201 and "headers" not in queued(aws)[0]
+
+
+@pytest.mark.parametrize("auth", [
+    {"kind": "cookie", "value": "nocookieequals"},
+    {"kind": "jwt", "value": "not.enough"},
+    {"kind": "cf", "id": "no-dot-access", "secret": "x"},
+    {"kind": "raw", "value": "nocolon"},
+    {"kind": "bogus", "value": "x"},
+])
+def test_bad_auth_rejected(auth, aws):
+    assert _add_auth(auth, aws)[0] == 400 and not queued(aws)

@@ -18,6 +18,7 @@
 | 扫描机 | 每台一个 CodeBuild build，新实例；按顺序领取队列（S3）里的任务，一次一个 |
 | 镜像 | 官方 ZAP 镜像，不改动，加上扫描脚本；放在你的 ECR |
 | 报告 | S3，预签名下载链接，`report_retention_days` 天后删除 |
+| 登录（任务级） | 每个任务可带 Cookie、JWT、Cloudflare Access 令牌或自定义头，扫描即在登录态下进行；日志里脱敏，API 不返回 |
 | 密钥 | SSM SecureString，在 Terraform 之外设置；日志里显示为 `***` |
 | 空闲费用 | 全部关机时 ≈ $0（CodeBuild 按开机的分钟计费） |
 

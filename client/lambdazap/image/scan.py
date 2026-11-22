@@ -40,6 +40,7 @@ TYPES = {"report.html": "text/html; charset=utf-8", "report.json": "application/
 RESULTS = {0: "pass", 2: "warn", 1: "fail"}  # ZAP's exit status -> result; anything else = error
 ORDER = ["pass", "warn", "fail", "error"]    # worst last
 WORK = "/zap/wrk"                            # where ZAP's scripts write their reports
+HOOK = "/zap/zap_hook.py"                    # adds a task's auth headers to every request (see zap_hook.py)
 PLACEHOLDER = "CHANGE-ME"                    # what Terraform creates a secret with
 POLL_SECONDS = 2
 LEASE_CHECK_SECONDS = 10
@@ -84,8 +85,9 @@ class Scanner:
         return True
 
     def masked(self, text):
-        for v in self.values.values():
-            text = text.replace(v, "***")
+        for v in list(self.values.values()) + getattr(self, "extra_mask", []):
+            if v:
+                text = text.replace(v, "***")
         return text
 
     # ---- the lease ----
@@ -143,8 +145,11 @@ class Scanner:
         return None
 
     # ---- one task ----
-    def zap(self, task_id, url, mode):
-        """Run ZAP on one target, its output streamed (masked, tagged with the task id); returns the result."""
+    def zap(self, task_id, url, mode, headers):
+        """Run ZAP on one target, its output streamed (masked, tagged with the task id); returns the result.
+
+        headers (a list of {name, value}) are added to every request through the ZAP hook, so the scan is signed in;
+        their values are masked in the log."""
         for name in REPORTS:
             try:
                 os.remove(os.path.join(WORK, name))
@@ -155,11 +160,17 @@ class Scanner:
             cmd += ["-f", "openapi"]
         for name, flag in REPORTS.items():
             cmd += [flag, name]
-        self.proc = subprocess.Popen(cmd, cwd=WORK, env=dict(os.environ, **self.values), stdout=subprocess.PIPE,
+        env = dict(os.environ, **self.values)
+        self.extra_mask = [h["value"] for h in headers]
+        if headers:
+            env["ZAP_EXTRA_HEADERS"] = json.dumps(headers)
+            cmd += ["--hook", HOOK]
+        self.proc = subprocess.Popen(cmd, cwd=WORK, env=env, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT, text=True, errors="replace")
         for line in self.proc.stdout:
             say(f"::out {task_id} {self.masked(line.rstrip(chr(10)))}")
         code, self.proc = self.proc.wait(), None
+        self.extra_mask = []
         return RESULTS.get(code, "error")
 
     def upload(self, task_id, url):
@@ -177,7 +188,7 @@ class Scanner:
         for url in task["targets"]:
             say(f"::site {tid} {url} start")
             try:
-                result = self.zap(tid, url, task["mode"]) if task["mode"] in SCRIPTS else "error"
+                result = self.zap(tid, url, task["mode"], task.get("headers", [])) if task["mode"] in SCRIPTS else "error"
                 self.upload(tid, url)
             except Exception as e:  # noqa: BLE001 - reported in the log, the next target runs
                 say(f"::out {tid} {self.masked(f'{type(e).__name__}: {e}')}")
