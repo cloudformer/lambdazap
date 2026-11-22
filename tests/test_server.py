@@ -138,6 +138,13 @@ def test_other_hosts_are_forbidden(url, aws):
     assert status == 403 and "allowlist" in r["error"] and not queued(aws)
 
 
+@pytest.mark.parametrize("url", ["https://evil.com/", "http://anything.internal:9000/x", "https://example.net/"])
+def test_wildcard_allows_any_host(url, aws, monkeypatch):
+    monkeypatch.setattr(lf, "ALLOWED_TARGETS", ["*"])
+    status, r = add([url])
+    assert status == 201 and r["targets"] == [url]
+
+
 def test_one_bad_target_adds_nothing(aws):
     assert add(["https://example.com/", "https://evil.com/"])[0] == 403 and not queued(aws)
 

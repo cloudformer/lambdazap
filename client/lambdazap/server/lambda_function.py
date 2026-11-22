@@ -194,7 +194,8 @@ def lambda_handler(event, context):
 def _target(url):
     """The target URL, normalized, when it is on the allowlist; BadRequest / Forbidden otherwise.
 
-    An allowlist entry is a host (any port), host:port (that port only) or *.domain (its subdomains, any port)."""
+    An allowlist entry is a host (any port), host:port (that port only), *.domain (its subdomains, any port)
+    or * on its own (any host: the allowlist is turned off, sign-in is the only gate)."""
     if not isinstance(url, str):
         raise BadRequest(f"a target is a URL string, got {url!r}")
     parts = urllib.parse.urlsplit(url.strip())
@@ -205,6 +206,8 @@ def _target(url):
     if parts.scheme not in ("http", "https") or not host or parts.username or parts.password:
         raise BadRequest(f"target {url!r}: http(s)://host[:port][/path], no user or password in it")
     for entry in ALLOWED_TARGETS:
+        if entry == "*":  # any host (the allowlist is turned off)
+            return parts.geturl()
         name, _, want = entry.partition(":")
         if want and str(port or (443 if parts.scheme == "https" else 80)) != want:
             continue
