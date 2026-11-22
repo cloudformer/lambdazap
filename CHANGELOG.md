@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7 — 2026-11-22
+
+- Packaging fix: include image/zap_hook.py in the wheel (0.1.6 shipped the Dockerfile COPY but not the file, so the image build failed).
+
 ## 0.1.6 — 2026-11-22
 
 - Per-task sign-in: a task can carry a Cookie, a JWT (Bearer), Cloudflare Access tokens, or a raw header, so the scan runs behind a login. Credentials are stored for the scanner, masked in the log, and never returned by the API. New-task form redesigned (inputs left, mode on the right).

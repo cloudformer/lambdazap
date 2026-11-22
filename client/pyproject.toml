@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lambdazap"           # repo = pip = import name
-version = "0.1.6"
+version = "0.1.7"
 description = "OWASP ZAP scans of your own sites from a web UI on a Lambda Function URL; scanners are CodeBuild instances you start and shut down like machines, ≈ $0 while none is on."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -32,5 +32,5 @@ Issues = "https://github.com/cloudformer/lambdazap/issues"
 packages = ["lambdazap", "lambdazap.server"]   # lambdazap.server = the Lambda (handler lambdazap.server.lambda_function.lambda_handler)
 
 [tool.setuptools.package-data]
-"lambdazap" = ["image/Dockerfile", "image/scan.py"]   # the scan image's build context
+"lambdazap" = ["image/Dockerfile", "image/scan.py", "image/zap_hook.py"]   # the scan image's build context
 "lambdazap.server" = ["index.html"]                   # the web UI
