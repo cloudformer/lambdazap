@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lambdazap</title>
+<style>
+/* ---- idlefree console shell: the same block on every console (s3rds, dynamoredis, s3shift, lambdaflow, lambdazap); the look of s3keepass ---- */
+:root {
+  --bg: #f3f4f6; --panel: #ffffff; --panel2: #f9fafb; --line: #e5e7eb; --line2: #d1d5db;
+  --text: #111827; --muted: #6b7280; --faint: #9ca3af;
+  --accent: #2563eb; --accent-bg: #dbeafe; --accent-text: #1e40af;
+  --ok: #059669; --err: #dc2626; --err-bg: #fef2f2;
+  --bar: #1f2937; --bar-text: #f9fafb; --bar-muted: #9ca3af;
+  --code-bg: #111827; --code-text: #d1d5db; --code-sql: #93c5fd; --code-ok: #86efac; --code-err: #fca5a5;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0f17; --panel: #111827; --panel2: #0f1623; --line: #1f2937; --line2: #374151;
+    --text: #e5e7eb; --muted: #9ca3af; --faint: #6b7280;
+    --accent: #3b82f6; --accent-bg: #1e3a8a; --accent-text: #dbeafe; --err-bg: #2a1215;
+    --bar: #030712; --code-bg: #030712;
+  }
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font: 14px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 34px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+a { color: var(--accent); }
+/* top bar: name, where it runs, sign out */
+.bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; min-height: 52px;
+  background: var(--bar); color: var(--bar-text); position: sticky; top: 0; z-index: 7; }   /* stays in view while the page scrolls */
+.brand { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.brand .logo { width: 30px; height: 30px; border-radius: 7px; background: #2b2d31; display: grid; place-items: center; font-size: 16px; }
+.bar .meta { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.bar .k { color: var(--bar-muted); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+.bar .chip { font: 12px var(--mono); color: var(--bar-text); background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15); border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
+.bar .spacer { flex: 1; }
+.tb { background: transparent; border: 1px solid transparent; color: var(--bar-text); border-radius: 6px; padding: 5px 9px;
+  cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; }
+.tb:hover { background: rgba(255,255,255,.1); }
+.tb.on { background: rgba(255,255,255,.14); }
+.page { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+/* buttons: blue = the main action, outlined = the rest, red text = removes something */
+.btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line2); background: var(--panel); color: var(--text);
+  cursor: pointer; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn-primary, .btn-secondary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) { filter: brightness(1.08); color: #fff; }
+.btn-danger { padding: 3px 9px; font-size: 12px; border-radius: 6px; border: 1px solid var(--line2); background: var(--panel);
+  color: var(--err); cursor: pointer; }
+.btn-danger:hover { border-color: var(--err); background: var(--err-bg); }
+.btn-small { padding: 3px 9px; font-size: 12px; }
+input, select, textarea { background: var(--panel); border: 1px solid var(--line2); border-radius: 6px; padding: 6px 10px; outline: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+/* panels and text */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; min-width: 0; }
+.section-title { font-size: 13px; font-weight: 600; margin: 0 0 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+.code { width: 100%; min-height: 90px; resize: vertical; font: 13px/1.5 var(--mono); padding: 8px 10px; }
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+/* tables: a quiet header row, numbers line up, wide results scroll inside their own frame */
+.grid-wrap { overflow: auto; max-height: 60vh; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+table { min-width: 100%; border-collapse: separate; border-spacing: 0; }
+th { position: sticky; top: 0; z-index: 1; background: var(--panel2); color: var(--muted); font-size: 12px; font-weight: 600;
+  text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+td { padding: 7px 12px; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: top; line-height: 1.45;
+  font-variant-numeric: tabular-nums; white-space: normal; overflow-wrap: anywhere; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--panel2); }
+td.null { color: var(--faint); font-style: italic; }
+td input { width: 100%; min-width: 80px; padding: 4px 8px; font-size: 13px; }
+/* the latest run's result or error, right under the box that ran it */
+.out { margin-top: 10px; padding: 8px 12px; border-radius: 6px; background: var(--code-bg); color: var(--code-text);
+  font: 12px/1.7 var(--mono); white-space: pre-wrap; max-height: 240px; overflow: auto; }
+.out:empty { display: none; }
+.out .sql, .history .sql { color: var(--code-sql); } .out .ok, .history .ok { color: var(--code-ok); }
+.out .err, .history .err { color: var(--code-err); }
+/* status bar: the last call; click for this session's history; the version links to the changelog */
+.status { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; gap: 12px; align-items: center;
+  padding: 4px 16px; min-height: 26px; font: 12px var(--mono); color: var(--muted); background: var(--panel);
+  border-top: 1px solid var(--line); cursor: pointer; }
+.status .last { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status .last.ok { color: var(--ok); } .status .last.err { color: var(--err); }
+.status .ver { color: var(--accent); white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
+.history { position: fixed; left: 0; right: 0; bottom: 26px; z-index: 5; max-height: 40vh; overflow: auto; padding: 8px 16px;
+  background: var(--code-bg); color: var(--code-text); font: 12px/1.7 var(--mono); white-space: pre-wrap; border-top: 1px solid var(--line2); }
+.history .sep { border-top: 1px dashed #4b5563; margin: 6px 0; }
+/* dialogs */
+dialog { border: none; border-radius: 12px; padding: 22px 24px; width: 440px; max-width: calc(100vw - 32px);
+  background: var(--panel); color: var(--text); box-shadow: 0 24px 64px rgba(0,0,0,.35); position: fixed; inset: 0; margin: auto; }
+dialog::backdrop { background: rgba(15,23,42,.55); }
+dialog h3 { font-size: 17px; margin-bottom: 6px; }
+.form-grid { display: grid; gap: 12px; margin: 8px 0 4px; }
+.form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.form-field input { width: 100%; padding: 8px 10px; }
+.form-field small { color: var(--faint); font-size: 12px; }
+dialog .actions { flex-direction: row-reverse; justify-content: flex-start; margin-top: 16px; }   /* OK first in the form (Enter), shown on the right */
+/* ---- end idlefree console shell ---- */
+
+/* ---- lambdazap ---- */
+/* a centered column of at most --width; the top bar and the status bar line their content up with it */
+:root { --width: 1120px; }
+.page { max-width: calc(var(--width) + 32px); margin-inline: auto; }
+.bar, .status { padding-inline: max(16px, calc((100% - var(--width)) / 2)); }
+.panel { padding: 14px 16px; }
+/* two folding panels (scanners, tasks): folded, each shows only what is active; the console below shows the one picked */
+.fold-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fold-head .spacer { flex: 1; }
+.fold-toggle { border: none; background: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 2px 0;
+  font-size: 14px; font-weight: 600; color: var(--text); }
+.fold-toggle::before { content: "▸"; color: var(--muted); font-size: 12px; transition: transform .15s; }
+.fold-toggle[aria-expanded="true"]::before { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .fold-toggle::before { transition: none; } }
+.fold-head select { padding: 5px 8px; }
+.field { display: inline-flex; align-items: center; gap: 6px; }
+.rows { display: flex; flex-direction: column; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.rows:empty { display: none; }
+.row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px; padding: 8px 12px;
+  border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; background: var(--panel); }
+.row:last-child { border-bottom: none; }
+.row:hover { background: var(--panel2); }
+.row.picked { background: var(--accent-bg); }
+.row .id { font: 12px var(--mono); color: var(--muted); }
+.row .what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .what .hint { margin-left: 6px; }
+.row .act { display: flex; gap: 6px; justify-content: flex-end; min-width: 74px; }
+.row .left { font: 12px var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.row .left.soon { color: var(--err); font-weight: 600; }
+.empty-row { padding: 10px 12px; color: var(--muted); font-size: 13px; }
+/* the new task: the targets on the left, the mode and the button on the right; one column on a phone */
+.new { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 10px 14px; margin-top: 12px; }
+@media (max-width: 720px) { .new { grid-template-columns: 1fr; } .row { grid-template-columns: 44px minmax(0, 1fr) auto; } .row .left { display: none; }
+  .row .act { grid-column: 1 / -1; } }
+.new textarea { height: 100%; min-height: 96px; resize: vertical; }
+.new-side { display: flex; flex-direction: column; gap: 6px; }
+.modes { display: flex; flex-direction: column; gap: 6px; }
+.mode { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid var(--line2); border-radius: 8px;
+  cursor: pointer; background: var(--panel); }
+.mode input { margin: 0; accent-color: var(--accent); }
+.mode b { font: 600 13px var(--mono); }
+.mode:has(input:checked) { border-color: var(--accent); background: var(--accent-bg); }
+.mode:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--accent-bg); }
+.new-side .btn { justify-content: center; margin-top: 2px; }
+.allowed { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.allowed span { font: 12px var(--mono); background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; }
+.badge { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 1px 10px; border: 1px solid var(--line2); white-space: nowrap; }
+.badge.run, .badge.on, .badge.starting { color: var(--accent-text); background: var(--accent-bg); border-color: var(--accent); }
+.badge.pass, .badge.ready { color: var(--ok); border-color: var(--ok); }
+.badge.warn { color: #b45309; border-color: #d97706; }
+.badge.fail, .badge.error { color: var(--err); border-color: var(--err); background: var(--err-bg); }
+.badge.waiting, .badge.off, .badge.cancelled { color: var(--muted); }
+/* the console: the picked scanner's or task's log, live while it runs */
+.console { display: flex; flex-direction: column; gap: 8px; }
+.console-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.console-head .name { font-weight: 600; }
+.console-head a { font-size: 12px; }
+.console-body { padding: 8px 12px; border-radius: 6px; background: var(--code-bg); color: var(--code-text); font: 12px/1.7 var(--mono);
+  white-space: pre-wrap; overflow-wrap: anywhere; height: 52vh; min-height: 240px; overflow: auto; }
+.console-body .mark { color: var(--code-sql); }
+.console-body .ok { color: var(--code-ok); } .console-body .err { color: var(--code-err); }
+</style>
+</head>
+<body>
+<header class="bar">
+  <span class="brand"><span class="logo">🛡</span>lambdazap</span>
+  <span class="meta"><span class="k">Endpoint</span><span class="chip" id="info-host">-</span></span>
+  <span class="meta" id="who-meta" hidden><span class="k">Signed in</span><span class="chip" id="who">-</span></span>
+  <span class="spacer"></span>
+  <button class="tb" id="logout">Sign out</button>
+</header>
+
+<div class="page">
+  <section class="panel">
+    <div class="fold-head">
+      <button class="fold-toggle" id="scanners-fold" aria-expanded="false" aria-controls="scanners">Scanners</button>
+      <span class="hint" id="scanners-sum"></span>
+      <span class="spacer"></span>
+      <label class="field"><span class="hint">Instance</span><select id="instance"></select></label>
+      <label class="field"><span class="hint">For</span><select id="duration"></select></label>
+      <button class="btn btn-primary" id="power-on">⏻ Start scanner</button>
+    </div>
+    <div class="rows" id="scanners"></div>
+  </section>
+
+  <section class="panel">
+    <div class="fold-head">
+      <button class="fold-toggle" id="tasks-fold" aria-expanded="false" aria-controls="tasks">Tasks</button>
+      <span class="hint" id="tasks-sum"></span>
+    </div>
+    <div id="tasks-body">
+      <div class="new">
+        <textarea id="targets" class="code" aria-label="Targets, one URL per line" placeholder="Targets, one URL per line&#10;https://example.com/"></textarea>
+        <div class="new-side">
+          <div class="modes" id="modes" role="radiogroup" aria-label="Mode"></div>
+          <button class="btn btn-primary" id="add">+ Add task</button>
+        </div>
+        <div class="allowed" id="allowed"></div>
+      </div>
+    </div>
+    <div class="rows" id="tasks"></div>
+  </section>
+
+  <section class="panel console">
+    <div class="console-head" id="console-head"><span class="hint">Pick a scanner or a task to see its console.</span></div>
+    <div class="console-body" id="console" role="log" aria-live="off"></div>
+  </section>
+</div>
+
+<div class="history" id="history" hidden></div>
+<footer class="status" id="status" title="Click: this session's calls">
+  <span class="last" id="last">ready</span>
+  <a class="ver" href="https://github.com/cloudformer/lambdazap/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer"
+     title="What changed in each release">lambdazap __VERSION__</a>
+</footer>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <h3>Sign in</h3>
+    <div class="form-grid">
+      <div class="form-field"><label for="u">user</label><input id="u" autocomplete="username"></div>
+      <div class="form-field"><label for="p">password</label><input id="p" type="password" autocomplete="current-password"></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" value="ok">OK</button>
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const h = (tag, props, ...kids) => { const e = Object.assign(document.createElement(tag), props || {}); e.append(...kids.filter(k => k != null)); return e; };
+// the browser keeps only the credential, the history panel's and the folds' state (everything else is fetched)
+const store = {
+  get: k => { try { return localStorage.getItem('lzap_' + k); } catch(e){ return null; } },
+  set: (k, v) => { try { v == null ? localStorage.removeItem('lzap_' + k) : localStorage.setItem('lzap_' + k, v); } catch(e){} },
+};
+let cred = store.get('cred') || '';
+
+$('#info-host').textContent = location.host;
+let cfg = null;        // /api/config
+const POLL_MS = 2000;
+const RUNNING = 'IN_PROGRESS';
+let scanners = [], tasks = [];
+let picked = null;     // what the console shows: {kind: 'scanner' | 'task', id}; changes only when a row is clicked
+let feed = null;       // the console's lines so far: {key, token | since, seen, lines}
+
+// ---- sign-in: HTTP Basic when the deployment uses it; behind Cloudflare Access the browser is already signed in ----
+function askCred(){
+  return new Promise(resolve => {
+    const dlg = $('#dlg');
+    dlg.returnValue = 'cancel';
+    dlg.onclose = () => {
+      if (dlg.returnValue === 'ok' && $('#u').value) { cred = $('#u').value.trim() + ':' + $('#p').value; store.set('cred', cred); }
+      $('#p').value = '';
+      resolve(dlg.returnValue === 'ok');
+    };
+    dlg.showModal();
+    $('#u').focus();
+  });
+}
+
+async function api(path, opts = {}, retried){
+  const headers = {'content-type': 'application/json'};
+  if (cred) headers.authorization = 'Basic ' + btoa(cred);
+  const r = await fetch(path, Object.assign({}, opts, {headers}));
+  let data = {}; try { data = await r.json(); } catch(e) {}
+  if (r.status === 401){
+    if (!data.http_auth) throw new Error('sign in through Cloudflare Access, then reload');
+    cred = ''; store.set('cred', null);
+    if (!retried && await askCred()) return api(path, opts, true);
+    throw new Error('not signed in');
+  }
+  if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+  return data;
+}
+
+// ---- status bar: the last call; click for this session's calls (open or closed is remembered) ----
+const calls = [];
+let historyOpen = store.get('history') === '1';
+function ts(){ const d = new Date(), p = n => String(n).padStart(2, '0'); return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+function note(text, ok){
+  calls.push({text: `[${ts()}] ${text}`, cls: ok ? 'ok' : 'err'});
+  if (calls.length > 300) calls.shift();
+  const last = calls[calls.length - 1];
+  $('#last').textContent = last.text; $('#last').className = 'last ' + last.cls;
+  renderHistory();
+}
+function renderHistory(){
+  const box = $('#history');
+  box.hidden = !historyOpen;
+  if (historyOpen) box.replaceChildren(...(calls.length ? calls.slice().reverse().map(c => h('div', {className: c.cls, textContent: c.text}))
+                                                         : [h('div', {textContent: 'No calls yet in this session.'})]));
+}
+$('#status').onclick = e => { if (e.target.closest('a')) return; historyOpen = !historyOpen; store.set('history', historyOpen ? '1' : '0'); renderHistory(); };
+
+function when(t){ return t ? new Date(t).toLocaleString() : ''; }
+function took(a, b){ const s = Math.max(0, Math.round(((b ? new Date(b) : new Date()) - new Date(a)) / 1000)); return s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor(s / 60) % 60} min` : s >= 60 ? `${Math.floor(s / 60)} min` : `${s} s`; }
+function short(id){ return id.slice(0, 4); }
+function hours(m){ return m % 60 ? `${m} min` : `${m / 60} h`; }
+function left(until){   // a lease's time left: [text, under 10 minutes]
+  const s = Math.max(0, Math.round((new Date(until) - new Date()) / 1000));
+  return [s >= 3600 ? `${Math.floor(s / 3600)} h ${String(Math.floor(s / 60) % 60).padStart(2, '0')} min left` : `${Math.ceil(s / 60)} min left`, s < 600];
+}
+
+// ---- folding: folded, a panel lists only what is active; open, everything (remembered) ----
+const folds = {scanners: store.get('fold_scanners') !== 'open', tasks: store.get('fold_tasks') === 'folded'};
+for (const k of ['scanners', 'tasks']) $(`#${k}-fold`).onclick = () => {
+  folds[k] = !folds[k]; store.set('fold_' + k, folds[k] ? 'folded' : 'open'); render();
+};
+
+// ---- what each thing is doing ----
+function scannerState(s){
+  if (s.status !== RUNNING) return ['off', 'off'];
+  const task = tasks.find(t => t.claim && t.claim.scanner === s.id && !t.claim.ended && !t.claim.cancelled);
+  if (task) return ['run', 'running #' + taskNo(task)];
+  return s.ready === false || s.phase !== 'BUILD' ? ['starting', 'starting'] : ['ready', 'ready'];
+}
+function taskState(t){
+  const c = t.claim;
+  if (!c) return ['waiting', 'waiting'];
+  if (c.cancelled) return ['cancelled', 'cancelled'];
+  if (!c.ended) {
+    const s = scanners.find(x => x.id === c.scanner);
+    return s && s.status !== RUNNING ? ['error', 'stopped'] : ['run', 'running'];
+  }
+  return [c.result, c.result];
+}
+function taskNo(t){ return tasks.length - tasks.indexOf(t); }   // #1 = the oldest shown
+
+function row(kind, item, cells, acts){
+  const r = h('div', {className: 'row' + (picked && picked.kind === kind && picked.id === item.id ? ' picked' : '')}, ...cells,
+              h('span', {className: 'act'}, ...(acts || [])));
+  r.onclick = () => { picked = {kind, id: item.id}; feed = null; render(); pollConsole(); };
+  return r;
+}
+
+function render(){
+  const on = scanners.filter(s => s.status === RUNNING);
+  $('#scanners-fold').setAttribute('aria-expanded', String(!folds.scanners));
+  $('#scanners-sum').textContent = `${on.length ? on.length + ' on' : 'all off'} · at most ${cfg.max_scanners} · each shuts down after ${cfg.idle_shutdown_minutes} min without a task`;
+  $('#power-on').disabled = on.length >= cfg.max_scanners;
+  const shownScanners = folds.scanners ? on : scanners;
+  $('#scanners').replaceChildren(...shownScanners.map(s => {
+    const [cls, label] = scannerState(s);
+    const on = s.status === RUNNING;
+    const [rest, soon] = on && s.until ? left(s.until) : ['', false];
+    const acts = on ? [h('button', {className: 'btn btn-small', textContent: '+' + hours(cfg.extend_minutes), title: 'Keep it on longer',
+                         onclick: e => { e.stopPropagation(); extendScanner(s); }}),
+                       h('button', {className: 'btn-danger', textContent: 'Shut down', onclick: e => { e.stopPropagation(); stopScanner(s); }})] : [];
+    return row('scanner', s, [h('span', {className: 'id', textContent: short(s.id)}),
+      h('span', {className: 'what'}, (cfg.instances[s.compute_type] || s.compute_type || ''),
+        h('span', {className: 'hint', textContent: `${on ? 'on' : 'was on'} ${took(s.started, s.ended)} · ${s.by || ''}`})),
+      h('span', {className: 'left' + (soon ? ' soon' : ''), textContent: rest}),
+      h('span', {className: 'badge ' + cls, textContent: label})], acts);
+  }));
+
+  const counts = {run: 0, waiting: 0, done: 0};
+  for (const t of tasks){ const [c] = taskState(t); counts[c === 'run' ? 'run' : c === 'waiting' ? 'waiting' : 'done']++; }
+  $('#tasks-fold').setAttribute('aria-expanded', String(!folds.tasks));
+  $('#tasks-sum').textContent = `${counts.run} running · ${counts.waiting} waiting · ${counts.done} done`;
+  $('#tasks-body').hidden = folds.tasks;
+  const active = tasks.filter(t => ['run', 'waiting'].includes(taskState(t)[0]));
+  const shownTasks = folds.tasks ? active : tasks;
+  $('#tasks').replaceChildren(...shownTasks.map(t => {
+    const [cls, label] = taskState(t);
+    const where = t.claim && t.claim.scanner ? ` · on ${short(t.claim.scanner)}` : '';
+    const cancel = cls === 'waiting' ? h('button', {className: 'btn-danger', textContent: 'Cancel',
+      onclick: e => { e.stopPropagation(); cancelTask(t); }}) : null;
+    return row('task', t, [h('span', {className: 'id', textContent: '#' + taskNo(t)}),
+      h('span', {className: 'what'}, `${t.mode} · ${t.targets.join(' ')}`, h('span', {className: 'hint', textContent: `${t.by}${where}`})),
+      h('span', {className: 'left', textContent: t.claim && t.claim.started ? took(t.claim.started, t.claim.ended) : ''}),   // running: so far
+      h('span', {className: 'badge ' + cls, textContent: label})], cancel ? [cancel] : []);
+  }));
+}
+
+// ---- the console: a scanner's whole log, or one task's lines (with its reports) ----
+// It shows the row last clicked; before any click, what is running when the page opens (a task, else a scanner).
+function current(){
+  if (!picked){
+    const run = tasks.find(t => taskState(t)[0] === 'run'), on = scanners.find(s => s.status === RUNNING);
+    picked = run ? {kind: 'task', id: run.id} : on ? {kind: 'scanner', id: on.id} : tasks[0] ? {kind: 'task', id: tasks[0].id} : null;
+  }
+  return picked;
+}
+
+// a task's line, shown without its id; markers become headings
+const OUT = /^::out (\S+) (.*)$/, SITE = /^::site (\S+) (\S+) (start|end)(?: (\w+))?$/, TASK = /^::task (\S+) (start|end)(?: (\w+))?$/;
+function pretty(line){
+  let m;
+  if ((m = OUT.exec(line))) return {text: m[2]};
+  if ((m = SITE.exec(line))) return m[3] === 'start' ? {text: `── ${m[2]}`, cls: 'mark'}
+                                                    : {text: `── ${m[2]}: ${m[4]}`, cls: m[4] === 'pass' ? 'ok' : m[4] === 'warn' ? 'mark' : 'err'};
+  if ((m = TASK.exec(line))) { const t = tasks.find(x => x.id === m[1]); return {text: `══ task #${t ? taskNo(t) : m[1]} ${m[2] === 'start' ? 'started' : 'ended: ' + m[3]}`, cls: 'mark'}; }
+  if (line === '::ready') return {text: '══ ready: takes tasks', cls: 'ok'};
+  if (line.startsWith('::shutdown')) return {text: '══ shut down: ' + line.slice(11), cls: 'mark'};
+  return {text: line};
+}
+
+async function pollConsole(){
+  const want = current();
+  if (!want) return;
+  const key = want.kind + ' ' + want.id;
+  if (!feed || feed.key !== key) feed = {key, token: null, since: 0, seen: new Set(), lines: [], reports: {}};
+  const f = feed;
+  try {
+    if (want.kind === 'scanner'){
+      const d = await api(`/api/scanners/${want.id}/log` + (f.token ? '?token=' + encodeURIComponent(f.token) : ''));
+      if (f !== feed) return;
+      f.lines.push(...d.log); f.token = d.token || f.token;
+    } else {
+      const d = await api(`/api/tasks/${want.id}?since=${f.since}`);
+      if (f !== feed) return;
+      for (const e of d.log) if (!f.seen.has(e.id)) { f.seen.add(e.id); f.lines.push(e.line); f.since = Math.max(f.since, e.t); }
+      f.reports = d.reports;
+    }
+    renderConsole(want);
+  } catch(e) { note(e.message, false); }
+}
+
+function renderConsole(want){
+  const box = $('#console');
+  const follow = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;   // at the bottom: keep following
+  let head;
+  if (want.kind === 'scanner'){
+    const s = scanners.find(x => x.id === want.id) || {id: want.id};
+    const [cls, label] = scanners.includes(s) ? scannerState(s) : ['off', 'off'];
+    head = [h('span', {className: 'name', textContent: `Scanner ${short(s.id)}`}), h('span', {className: 'badge ' + cls, textContent: label}),
+            h('span', {className: 'hint', textContent: `${cfg.instances[s.compute_type] || ''} · started ${when(s.started)}`
+              + (s.status === RUNNING && s.until ? ` · shuts down at ${new Date(s.until).toLocaleTimeString()}` : '')})];
+  } else {
+    const t = tasks.find(x => x.id === want.id);
+    const [cls, label] = t ? taskState(t) : ['waiting', ''];
+    const links = Object.entries(feed.reports).flatMap(([host, files]) => [h('span', {className: 'hint', textContent: host}),
+      ...['report.html', 'report.json', 'report.md'].filter(n => files[n]).map(n =>
+        h('a', {href: files[n], target: '_blank', rel: 'noopener noreferrer', textContent: n.split('.')[1]}))]);
+    const on = t && t.claim && t.claim.scanner;
+    head = [h('span', {className: 'name', textContent: t ? `Task #${taskNo(t)} · ${t.mode}` : 'Task'}),
+            h('span', {className: 'badge ' + cls, textContent: label}),
+            ...(on ? [h('a', {href: '#', textContent: `on scanner ${short(on)}`, title: 'Show that scanner\'s console',
+                              onclick: e => { e.preventDefault(); picked = {kind: 'scanner', id: on}; feed = null; render(); pollConsole(); }})] : []),
+            ...links];
+  }
+  $('#console-head').replaceChildren(...head);
+  box.replaceChildren(...feed.lines.map(l => { const p = pretty(l); return h('div', {className: p.cls || '', textContent: p.text}); }));
+  if (!feed.lines.length) box.textContent = want.kind === 'task' ? 'No output yet: the task starts when a scanner is free.' : 'No output yet: the instance is starting.';
+  if (follow) box.scrollTop = box.scrollHeight;
+}
+
+// ---- refresh everything every POLL_MS ----
+async function poll(){
+  try {
+    const [s, t] = await Promise.all([api('/api/scanners'), api('/api/tasks')]);
+    scanners = s.scanners; tasks = t.tasks;
+    render();
+    await pollConsole();
+  } catch(e) { note(e.message, false); }
+  setTimeout(poll, POLL_MS);
+}
+
+// ---- actions ----
+$('#power-on').onclick = async () => {
+  $('#power-on').disabled = true;
+  try {
+    const s = await api('/api/scanners', {method: 'POST', body: JSON.stringify({compute_type: $('#instance').value, minutes: +$('#duration').value})});
+    note(`scanner ${short(s.id)} starting: ${cfg.instances[s.compute_type]}, for ${hours(+$('#duration').value)}`, true);
+    scanners.unshift(s); render();
+  } catch(e) { note(e.message, false); render(); }
+};
+
+async function extendScanner(s){
+  try {
+    const d = await api(`/api/scanners/${s.id}/extend`, {method: 'POST'});
+    s.until = d.until; render();
+    note(`scanner ${short(s.id)} stays on until ${new Date(d.until).toLocaleTimeString()}`, true);
+  } catch(e) { note(e.message, false); }
+}
+
+async function stopScanner(s){
+  try { await api(`/api/scanners/${s.id}/stop`, {method: 'POST'}); note(`scanner ${short(s.id)} shutting down`, true); }
+  catch(e) { note(e.message, false); }
+}
+
+async function cancelTask(t){
+  try { await api(`/api/tasks/${t.id}/cancel`, {method: 'POST'}); note(`task #${taskNo(t)} cancelled`, true); }
+  catch(e) { note(e.message, false); }
+}
+
+$('#add').onclick = async () => {
+  const targets = $('#targets').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!targets.length) return note('enter at least one target URL', false);
+  $('#add').disabled = true;
+  try {
+    const t = await api('/api/tasks', {method: 'POST', body: JSON.stringify({targets, mode: $('#modes input:checked').value})});
+    tasks.unshift(t); render();
+    note(`task #${taskNo(t)} added: ${t.mode}, ${t.targets.length} target(s)` + (scanners.some(s => s.status === RUNNING) ? '' : ' · start a scanner to run it'), true);
+    $('#targets').value = '';
+  } catch(e) { note(e.message, false); }
+  finally { $('#add').disabled = false; }
+};
+
+$('#logout').onclick = () => { cred = ''; store.set('cred', null); note('signed out', true); };
+
+async function start(){
+  cfg = await api('/api/config');
+  $('#instance').replaceChildren(...Object.entries(cfg.instances).map(([v, label]) => h('option', {value: v, textContent: label})));
+  $('#instance').value = cfg.default_instance;
+  $('#duration').replaceChildren(...cfg.durations.map(m => h('option', {value: m, textContent: hours(m)})));
+  $('#duration').value = cfg.default_minutes;
+  $('#modes').replaceChildren(...Object.entries(cfg.modes).map(([m, what], i) =>
+    h('label', {className: 'mode'}, h('input', {type: 'radio', name: 'mode', id: 'mode-' + m, value: m, checked: !i}),
+      h('b', {textContent: m}), h('span', {className: 'hint', textContent: what}))));
+  $('#allowed').replaceChildren(h('span', {className: 'hint', style: 'border:none;background:none;padding:0', textContent: 'allowed:'}),
+                                ...cfg.allowed_targets.map(t => h('span', {textContent: t})));
+  const me = await api('/api/me');
+  $('#who').textContent = me.identity; $('#who-meta').hidden = false;
+  poll();
+}
+
+renderHistory();
+start().catch(e => note(e.message, false));
+</script>
+</body>
+</html>
