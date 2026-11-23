@@ -37,6 +37,9 @@
 .row .left { font: 12px var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .row .left.soon { color: var(--err); font-weight: 600; }
 .empty-row { padding: 10px 12px; color: var(--muted); font-size: 13px; }
+.more { padding: 7px 12px; display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--accent); cursor: pointer; border-top: 1px solid var(--line); background: var(--panel); }
+.more:hover { background: var(--panel2); }
+.more svg { display: block; }
 /* the new task: the targets on the left, the mode and the button on the right; one column on a phone */
 .new { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 10px 14px; margin-top: 12px; }
 @media (max-width: 720px) { .new { grid-template-columns: 1fr; } .row { grid-template-columns: 44px minmax(0, 1fr) auto; } .row .left { display: none; }
@@ -335,7 +338,7 @@ function render(){
   $('#tasks-sum').textContent = `${counts.run} running · ${counts.waiting} waiting · ${counts.done} done`;
   $('#tasks-body').hidden = false;   // the new-task form stays visible; the fold only collapses the row list
   const shownTasks = folds.tasks ? tasks.slice(0, RECENT_TASKS) : tasks;
-  $('#tasks').replaceChildren(...shownTasks.map(t => {
+  const taskRows = shownTasks.map(t => {
     const [cls, label] = taskState(t);
     const where = t.claim && t.claim.scanner ? ` · on ${short(t.claim.scanner)}` : '';
     const cancel = cls === 'waiting' ? h('button', {className: 'btn-danger', textContent: 'Cancel',
@@ -344,7 +347,14 @@ function render(){
       h('span', {className: 'what'}, `${t.mode} · ${t.targets.join(' ')}`, h('span', {className: 'hint', textContent: `${t.by}${where}${t.auth ? ' · 🔒 ' + t.auth : ''}`})),
       h('span', {className: 'left', textContent: t.claim && t.claim.started ? took(t.claim.started, t.claim.ended) : ''}),   // running: so far
       h('span', {className: 'badge ' + cls, textContent: label})], cancel ? [cancel] : []);
-  }));
+  });
+  // a clear expand/collapse row at the bottom, so the hidden tasks are discoverable
+  const toggleTasks = () => { folds.tasks = !folds.tasks; store.set(FOLDKEY.tasks, folds.tasks ? 'folded' : 'open'); render(); };
+  const CHEV = d => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="${d ? '6 9 12 15 18 9' : '6 15 12 9 18 15'}"/></svg>`;
+  if (tasks.length > RECENT_TASKS)
+    taskRows.push(h('div', {className: 'more', onclick: toggleTasks,
+      innerHTML: folds.tasks ? CHEV(true) + `<span>show all ${tasks.length}</span>` : CHEV(false) + '<span>show fewer</span>'}));
+  $('#tasks').replaceChildren(...taskRows);
 }
 
 // ---- the console: a scanner's whole log, or one task's lines (with its reports) ----

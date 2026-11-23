@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.12 — 2026-11-23
+
+- Tasks: a visible "show all N tasks" / "show fewer" row at the bottom of the collapsed list, so the hidden tasks are discoverable.
+
 ## 0.1.11 — 2026-11-22
 
 - Tasks list is collapsed by default (latest rows shown, expand for all), regardless of an earlier saved state.
