@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lambdazap"           # repo = pip = import name
-version = "0.1.10"
+version = "0.1.11"
 description = "OWASP ZAP scans of your own sites from a web UI on a Lambda Function URL; scanners are CodeBuild instances you start and shut down like machines, ≈ $0 while none is on."
 readme = "README.md"
 requires-python = ">=3.9"

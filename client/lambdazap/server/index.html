@@ -260,10 +260,11 @@ function left(until){   // a lease's time left: [text, under 10 minutes]
 }
 
 // ---- folding: folded shows the latest rows; open shows all (remembered) ----
-const folds = {scanners: store.get('fold_scanners') !== 'open', tasks: store.get('fold_tasks') !== 'open'};
+const FOLDKEY = {scanners: 'fold_scanners', tasks: 'fold_tasks2'};   // tasks2: fresh key so the new folded-by-default wins over an old saved 'open'
+const folds = {scanners: store.get(FOLDKEY.scanners) !== 'open', tasks: store.get(FOLDKEY.tasks) !== 'open'};
 const RECENT_TASKS = 2;   // folded: only the latest few rows show, the rest collapse
 for (const k of ['scanners', 'tasks']) $(`#${k}-fold`).onclick = () => {
-  folds[k] = !folds[k]; store.set('fold_' + k, folds[k] ? 'folded' : 'open'); render();
+  folds[k] = !folds[k]; store.set(FOLDKEY[k], folds[k] ? 'folded' : 'open'); render();
 };
 
 // ---- what each thing is doing ----

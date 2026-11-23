@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11 — 2026-11-22
+
+- Tasks list is collapsed by default (latest rows shown, expand for all), regardless of an earlier saved state.
+
 ## 0.1.10 — 2026-11-22
 
 - Tasks: the list shows the latest rows by default and collapses the rest (expand to see all); the new-task form stays visible.
