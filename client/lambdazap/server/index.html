@@ -47,8 +47,9 @@
 .auth-head { display: flex; align-items: center; justify-content: space-between; }
 .auth-head a { color: var(--accent); font-size: 12px; text-decoration: none; }
 .auth-head a:hover { text-decoration: underline; }
-.auth select { padding: 6px 9px; }
-.auth-f { display: none; }
+.auth-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: center; }
+.auth-row select { padding: 6px 9px; }
+.auth-f { display: none; min-width: 0; }
 .auth-f.on { display: block; }
 .auth-cf.on { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .new-side { display: flex; flex-direction: column; gap: 6px; }
@@ -122,23 +123,25 @@
           <textarea id="targets" class="code" aria-label="Targets, one URL per line" placeholder="Targets, one URL per line&#10;https://app.example.com/"></textarea>
           <div class="auth">
             <div class="auth-head">
-              <span class="hint">Sign-in (optional) — scan behind a login</span>
+              <span class="hint">Sign-in (optional)</span>
               <a href="https://developer.chrome.com/docs/devtools/application/cookies/" target="_blank" rel="noopener noreferrer">how to get it ↗</a>
             </div>
-            <select id="auth-kind" aria-label="Sign-in type">
-              <option value="none">None — unauthenticated scan</option>
-              <option value="cookie">Cookie</option>
-              <option value="jwt">JWT (Bearer)</option>
-              <option value="cf">Cloudflare Access</option>
-              <option value="raw">Raw header</option>
-            </select>
-            <input id="auth-cookie" class="auth-f code" aria-label="Cookie" placeholder="sid=b7c1a9e2; token=eyJ1aWQiOjQyfQ; csrftoken=9f8a7b6c">
-            <input id="auth-jwt" class="auth-f code" aria-label="JWT" placeholder="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiJ9.Kx3b9Qp7mN2s">
-            <div id="auth-cf" class="auth-f auth-cf">
-              <input id="auth-cf-id" class="code" aria-label="CF Access Client Id" placeholder="8a1f0c7d2e5b4936.access">
-              <input id="auth-cf-secret" class="code" aria-label="CF Access Client Secret" placeholder="3d9e1a7c0b2f8564d1e3a6c9">
+            <div class="auth-row">
+              <select id="auth-kind" aria-label="Sign-in type">
+                <option value="none">None</option>
+                <option value="cookie">Cookie</option>
+                <option value="jwt">JWT (Bearer)</option>
+                <option value="cf">Cloudflare Access</option>
+                <option value="raw">Raw header</option>
+              </select>
+              <input id="auth-cookie" class="auth-f code" aria-label="Cookie" placeholder="sid=b7c1a9e2; token=eyJ1aWQiOjQyfQ; csrftoken=9f8a7b6c">
+              <input id="auth-jwt" class="auth-f code" aria-label="JWT" placeholder="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0MiJ9.Kx3b9Qp7mN2s">
+              <div id="auth-cf" class="auth-f auth-cf">
+                <input id="auth-cf-id" class="code" aria-label="CF Access Client Id" placeholder="8a1f0c7d2e5b4936.access">
+                <input id="auth-cf-secret" class="code" aria-label="CF Access Client Secret" placeholder="3d9e1a7c0b2f8564d1e3a6c9">
+              </div>
+              <input id="auth-raw" class="auth-f code" aria-label="Raw header" placeholder="X-Api-Key: 9c1f0a7b3d2e4856">
             </div>
-            <input id="auth-raw" class="auth-f code" aria-label="Raw header" placeholder="X-Api-Key: 9c1f0a7b3d2e4856">
             <div class="allowed" id="allowed"></div>
           </div>
         </div>

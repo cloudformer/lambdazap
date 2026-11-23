@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.8 — 2026-11-22
+
+- Task form: the sign-in type dropdown and its value sit on one row (dropdown : value), tighter layout.
+
 ## 0.1.7 — 2026-11-22
 
 - Packaging fix: include image/zap_hook.py in the wheel (0.1.6 shipped the Dockerfile COPY but not the file, so the image build failed).
