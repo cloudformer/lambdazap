@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9 — 2026-11-22
+
+- Fix: the sign-in value field is one line tall (0.1.8 shipped it with the multi-line `.code` height by mistake).
+
 ## 0.1.8 — 2026-11-22
 
 - Task form: the sign-in type dropdown and its value sit on one row (dropdown : value), tighter layout.
