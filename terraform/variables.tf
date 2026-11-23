@@ -105,3 +105,9 @@ variable "force_destroy" {
   type    = bool
   default = true
 }
+
+variable "lambdazap_version" {
+  description = "The lambdazap release to deploy from PyPI. Bump this per release during testing; the module is not touched."
+  type        = string
+  default     = "0.1.9"
+}
