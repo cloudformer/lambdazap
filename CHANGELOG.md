@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10 — 2026-11-22
+
+- Tasks: the list shows the latest rows by default and collapses the rest (expand to see all); the new-task form stays visible.
+
 ## 0.1.9 — 2026-11-22
 
 - Fix: the sign-in value field is one line tall (0.1.8 shipped it with the multi-line `.code` height by mistake).

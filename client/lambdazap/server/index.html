@@ -13,7 +13,7 @@
 .page { max-width: calc(var(--width) + 32px); margin-inline: auto; }
 .bar, .status { padding-inline: max(16px, calc((100% - var(--width)) / 2)); }
 .panel { padding: 14px 16px; }
-/* two folding panels (scanners, tasks): folded, each shows only what is active; the console below shows the one picked */
+/* two folding panels (scanners, tasks): folded, the latest rows show (the rest collapse); the console below shows the one picked */
 .fold-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .fold-head .spacer { flex: 1; }
 .fold-toggle { border: none; background: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 2px 0;
@@ -259,8 +259,9 @@ function left(until){   // a lease's time left: [text, under 10 minutes]
   return [s >= 3600 ? `${Math.floor(s / 3600)} h ${String(Math.floor(s / 60) % 60).padStart(2, '0')} min left` : `${Math.ceil(s / 60)} min left`, s < 600];
 }
 
-// ---- folding: folded, a panel lists only what is active; open, everything (remembered) ----
-const folds = {scanners: store.get('fold_scanners') !== 'open', tasks: store.get('fold_tasks') === 'folded'};
+// ---- folding: folded shows the latest rows; open shows all (remembered) ----
+const folds = {scanners: store.get('fold_scanners') !== 'open', tasks: store.get('fold_tasks') !== 'open'};
+const RECENT_TASKS = 2;   // folded: only the latest few rows show, the rest collapse
 for (const k of ['scanners', 'tasks']) $(`#${k}-fold`).onclick = () => {
   folds[k] = !folds[k]; store.set('fold_' + k, folds[k] ? 'folded' : 'open'); render();
 };
@@ -331,9 +332,8 @@ function render(){
   for (const t of tasks){ const [c] = taskState(t); counts[c === 'run' ? 'run' : c === 'waiting' ? 'waiting' : 'done']++; }
   $('#tasks-fold').setAttribute('aria-expanded', String(!folds.tasks));
   $('#tasks-sum').textContent = `${counts.run} running · ${counts.waiting} waiting · ${counts.done} done`;
-  $('#tasks-body').hidden = folds.tasks;
-  const active = tasks.filter(t => ['run', 'waiting'].includes(taskState(t)[0]));
-  const shownTasks = folds.tasks ? active : tasks;
+  $('#tasks-body').hidden = false;   // the new-task form stays visible; the fold only collapses the row list
+  const shownTasks = folds.tasks ? tasks.slice(0, RECENT_TASKS) : tasks;
   $('#tasks').replaceChildren(...shownTasks.map(t => {
     const [cls, label] = taskState(t);
     const where = t.claim && t.claim.scanner ? ` · on ${short(t.claim.scanner)}` : '';
