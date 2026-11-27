@@ -19,7 +19,7 @@ module "lambdazap" {
   log_retention_days    = var.log_retention_days
   architecture          = var.architecture
   force_destroy         = var.force_destroy
-  lambdazap_version     = var.lambdazap_version   # set in the tfvars file; bump it per release, module untouched
+  lambdazap_version     = var.lambdazap_version # set in the tfvars file; bump it per release, module untouched
 }
 
 output "console_url" {
